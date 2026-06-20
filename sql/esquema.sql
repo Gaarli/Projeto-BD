@@ -104,6 +104,7 @@ CREATE TABLE LoteColeta (
     DataColeta DATE NOT NULL,
     Transporte VARCHAR(50),
     CONSTRAINT PK_LoteColeta PRIMARY KEY (IdLote),
+    CONSTRAINT UQ_ChaveNatural_Lote UNIQUE (Rua, Cidade, CEP, Estado, DataColeta),
     CONSTRAINT FK_Lote_PontoColeta FOREIGN KEY (Rua, Cidade, CEP, Estado) REFERENCES PontoColeta(Rua, Cidade, CEP, Estado),
     CONSTRAINT FK_Lote_Transporte FOREIGN KEY (Transporte) REFERENCES TransporteColetaTri(codRastreio) ON DELETE SET NULL
 );
@@ -149,4 +150,9 @@ CREATE TABLE MaterialProcessado (
     DataDespacho DATE,
     TipoDestinacao VARCHAR(50),
     OrganizacaoDestino CHAR(14) NOT NULL,
-    CONSTRAINT PK_MaterialProcessado PRIMARY KEY (
+    -- Conclusão das chaves adicionada abaixo:
+    CONSTRAINT PK_MaterialProcessado PRIMARY KEY (Material, DataProcessamento, TipoDeProcessamento),
+    CONSTRAINT FK_MatProc_Material FOREIGN KEY (Material) REFERENCES Material(Nome) ON DELETE CASCADE,
+    CONSTRAINT FK_MatProc_Processo FOREIGN KEY (DataProcessamento, TipoDeProcessamento) REFERENCES ProcessoReciclagem(DataProcessamento, TipoDeProcessamento) ON DELETE CASCADE,
+    CONSTRAINT FK_MatProc_OrgDestino FOREIGN KEY (OrganizacaoDestino) REFERENCES OrganizacaoDestino(CNPJ)
+);
