@@ -10,7 +10,7 @@ venv/
 env/
 
 # Arquivo de configuração local e credenciais (Segurança)
-.env
+# .env Geralmente não enviaríamos o .env, mas é necessário para configurar o banco no pc local
 
 # Pastas de configuração de IDEs (Opcional)
 .vscode/
