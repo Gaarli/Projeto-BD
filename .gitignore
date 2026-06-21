@@ -1,0 +1,20 @@
+# Cache do Python e arquivos compilados (Lixo de compilação)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ambientes Virtuais (Dependências locais)
+venv/
+.venv/
+env/
+
+# Arquivo de configuração local e credenciais (Segurança)
+.env
+
+# Pastas de configuração de IDEs (Opcional)
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
