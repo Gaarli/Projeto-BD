@@ -1,5 +1,6 @@
+from backend.repositories import cadastro_repo
 from flask import Blueprint, request, jsonify, render_template
-from backend.repositories import cadastro_repo, consultas_repo
+from backend.repositories import consultas_repo
 from backend.config.database import run_query
 
 # Inicialização do Blueprint de rotas do sistema
