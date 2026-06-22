@@ -40,10 +40,11 @@ def buscar_lotes_sem_triagem():
         JOIN TransporteColetaTri TCT ON LC.Transporte   = TCT.codRastreio
         JOIN Transporte          T   ON TCT.codRastreio = T.codRastreio
         JOIN CentroTriagem       CT  ON TCT.CentroTriagem = CT.CNPJ
-        WHERE NOT EXISTS (
-            SELECT 1 FROM LoteTriado LT WHERE LT.LoteColeta = LC.IdLote
-        )
-        ORDER BY T.DataChegada
+        -- Aplicação do OUTER JOIN
+        LEFT JOIN LoteTriado     LT  ON LC.IdLote = LT.LoteColeta
+        -- Filtramos apenas os registros onde o lado direito do JOIN (LoteTriado) veio vazio
+        WHERE LT.LoteColeta IS NULL
+        ORDER BY T.DataChegada;
     """
     return run_query(sql)
 

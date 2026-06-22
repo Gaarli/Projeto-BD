@@ -1,77 +1,43 @@
 -- Identificar os Centros de Reciclagem que já processaram TODOS os tipos de materiais 'Críticos'
-SELECT 
-    CR.CNPJ, 
-    CR.Nome
+SELECT CR.CNPJ, CR.Nome, CR.Cidade, CR.Estado
 FROM CentroReciclagem CR
-JOIN TransporteTriReciclagem TTR ON CR.CNPJ = TTR.CentroReciclagem
-JOIN LoteTriado LT ON TTR.codRastreio = LT.TransporteTriReciclagem
-JOIN ProcessoReciclagem PR ON LT.LoteColeta = PR.LoteColeta AND LT.pinLoteTri = PR.PinLoteTri
-JOIN MaterialProcessado MP ON PR.DataProcessamento = MP.DataProcessamento AND PR.TipoDeProcessamento = MP.TipoDeProcessamento
-JOIN Material M ON MP.Material = M.Nome
-WHERE M.TipoMaterial = 'Critico'
-GROUP BY 
-    CR.CNPJ, 
-    CR.Nome
-HAVING COUNT(DISTINCT M.Nome) = (
-    -- Subconsulta que retorna o total de materiais críticos catalogados
-    SELECT COUNT(*) 
-    FROM Material 
-    WHERE TipoMaterial = 'Critico'
-);
-
--- Discussão sobre a eficiência
--- Otimização de Anti-Join (NOT EXISTS):
--- A utilização de NOT EXISTS permite que o otimizador do PostgreSQL
--- empregue estratégias eficientes como Hash Anti Join ou Nested Loop
--- Anti Join. Além disso, a busca é interrompida assim que um registro
--- correspondente é encontrado na tabela LoteTriado, evitando leituras
--- desnecessárias e reduzindo o custo de processamento e I/O.
-
--- Uso Direto de Chaves (Índices Físicos):
--- Os relacionamentos entre as tabelas LoteColeta, TransporteColetaTri
--- e Transporte são realizados por meio de chaves primárias e estrangeiras
--- (IdLote e codRastreio). Como essas colunas normalmente possuem índices
--- B-Tree, os acessos e cruzamentos são executados de forma eficiente,
--- mantendo bom desempenho mesmo em bases com grande volume de registros.
-
--- Identificar Lotes de Coleta que já chegaram a um Centro de Triagem, 
--- mas ainda não foram desmembrados em Lotes Triados.
-SELECT 
-    LC.IdLote,
-    LC.DataColeta,
-    TCT.CentroTriagem,
-    T.DataChegada
-FROM LoteColeta LC
--- Garante que o lote foi embarcado em um transporte de coleta para triagem
-JOIN TransporteColetaTri TCT ON LC.Transporte = TCT.codRastreio
--- Traz os dados genéricos do transporte, como a data de chegada
-JOIN Transporte T ON TCT.codRastreio = T.codRastreio
--- Filtra apenas os lotes que NÃO possuem registros correspondentes na tabela LoteTriado
 WHERE NOT EXISTS (
-    SELECT 1 
-    FROM LoteTriado LT 
-    WHERE LT.LoteColeta = LC.IdLote
-);
+    SELECT 1 FROM Material M
+    WHERE M.TipoMaterial = 'Critico'
+    AND NOT EXISTS (
+        SELECT 1
+        FROM TransporteTriReciclagem TTR
+        JOIN LoteTriado          LT  ON TTR.codRastreio       = LT.TransporteTriReciclagem
+        JOIN ProcessoReciclagem  PR  ON LT.LoteColeta         = PR.LoteColeta
+                                    AND LT.pinLoteTri         = PR.PinLoteTri
+        JOIN MaterialProcessado  MP  ON PR.DataProcessamento  = MP.DataProcessamento
+                                    AND PR.TipoDeProcessamento = MP.TipoDeProcessamento
+        WHERE TTR.CentroReciclagem = CR.CNPJ AND MP.Material = M.Nome
+    )
+)
+ORDER BY CR.Nome
+-- consulta 2
+SELECT
+    LC.IdLote     AS id_lote,
+    LC.DataColeta AS data_coleta,
+    LC.Cidade     AS cidade_origem,
+    CT.Nome       AS centro_triagem,
+    T.DataChegada AS chegada_ao_centro
+FROM LoteColeta LC
+    JOIN TransporteColetaTri TCT
+        ON LC.Transporte = TCT.codRastreio
+    JOIN Transporte T
+        ON TCT.codRastreio = T.codRastreio
+    JOIN CentroTriagem CT
+        ON TCT.CentroTriagem = CT.CNPJ
+    -- Aplicação do OUTER JOIN
+    LEFT JOIN LoteTriado LT
+        ON LC.IdLote = LT.LoteColeta
+-- Filtramos apenas os registros onde o lado direito do JOIN (LoteTriado) veio vazio
+WHERE LT.LoteColeta IS NULL
+ORDER BY T.DataChegada;
 
--- Discussão sobre eficiência
--- Uso de CTEs (Cláusula WITH):
--- A CTE VolumePorCentro cria um conjunto intermediário de resultados que
--- pode ser otimizado pelo PostgreSQL por meio de inlining ou materialização,
--- conforme a estratégia mais eficiente definida pelo otimizador. Dessa forma,
--- os dados agregados são calculados uma única vez e reutilizados nas etapas
--- subsequentes da consulta.
 
--- Ausência de Subconsultas Correlacionadas:
--- A consulta evita recálculos repetitivos da média para cada registro
--- analisado. O valor retornado por AVG(VolumeTotal) é obtido uma única vez
--- após a agregação, permitindo que a filtragem final seja executada de forma
--- eficiente sobre o conjunto de dados já processado.
-
--- Agregação via Hash Aggregate:
--- A combinação de SUM(LT.PesoExato) com GROUP BY sobre identificadores
--- compactos, como CNPJ, permite ao PostgreSQL utilizar operações de
--- Hash Aggregate em memória, reduzindo a necessidade de ordenações em disco
--- e melhorando o desempenho da etapa de agregação.
 
 -- Calcula o volume total processado por centro e filtra os que estão acima da média nacional
 WITH VolumePorCentro AS (
@@ -93,6 +59,7 @@ SELECT
     VolumeTotal
 FROM VolumePorCentro
 WHERE VolumeTotal > (SELECT AVG(VolumeTotal) FROM VolumePorCentro);
+ORDER BY VolumeTotal DESC;
 
 -- Discussão sobre a eficiência:
 -- Uso de CTE (Common Table Expression):
@@ -114,19 +81,26 @@ WHERE VolumeTotal > (SELECT AVG(VolumeTotal) FROM VolumePorCentro);
 
 
 -- Identificar os pontos de coleta que forneceram dispositivos que geraram um material específico
-SELECT DISTINCT 
-    PC.Rua, 
-    PC.Cidade, 
-    PC.CEP, 
-    PC.Estado
+SELECT DISTINCT
+    PC.Rua    AS rua,
+    PC.Cidade AS cidade,
+    PC.CEP    AS cep,
+    PC.Estado AS estado
 FROM PontoColeta PC
-JOIN LoteColeta LC 
-    ON PC.Rua = LC.Rua AND PC.Cidade = LC.Cidade AND PC.CEP = LC.CEP AND PC.Estado = LC.Estado
-JOIN ProcessoReciclagem PR 
-    ON LC.IdLote = PR.LoteColeta
-JOIN MaterialProcessado MP 
-    ON PR.DataProcessamento = MP.DataProcessamento AND PR.TipoDeProcessamento = MP.TipoDeProcessamento
-WHERE MP.Material = 'Cobre'; -- O parâmetro do material é injetado aqui
+    JOIN LoteColeta LC
+        ON PC.Rua    = LC.Rua
+       AND PC.Cidade = LC.Cidade
+       AND PC.CEP    = LC.CEP
+       AND PC.Estado = LC.Estado
+    JOIN ProcessoReciclagem PR
+        ON LC.IdLote = PR.LoteColeta
+    JOIN MaterialProcessado MP
+        ON PR.DataProcessamento   = MP.DataProcessamento
+       AND PR.TipoDeProcessamento = MP.TipoDeProcessamento
+WHERE MP.Material = %s -- O parâmetro do material é inserido no lugar de %s, ex.: "Cobre"
+ORDER BY
+    PC.Cidade,
+    PC.Rua;
 
 -- Discussão sobre a eficiência
 -- Salto de Tabelas (Bypass):
@@ -148,16 +122,23 @@ WHERE MP.Material = 'Cobre'; -- O parâmetro do material é injetado aqui
 -- no resultado final da consulta.
 
 -- Calcula o tempo médio em dias das viagens de coleta para triagem por transportadora
-SELECT 
-    Tr.CNPJ,
-    Tr.Nome,
-    ROUND(AVG(T.DataChegada - T.DataEnvio), 2) AS MediaTempoDias
+SELECT
+    Tr.CNPJ AS cnpj,
+    Tr.Nome AS nome,
+    ROUND(
+        AVG(T.DataChegada - T.DataEnvio),
+        2
+    ) AS media_dias
 FROM Transportadora Tr
-JOIN Transporte T ON Tr.CNPJ = T.Transportadora
-JOIN TransporteColetaTri TCT ON T.codRastreio = TCT.codRastreio
-GROUP BY 
-    Tr.CNPJ, 
-    Tr.Nome;
+    JOIN Transporte T
+        ON Tr.CNPJ = T.Transportadora
+    JOIN TransporteColetaTri TCT
+        ON T.codRastreio = TCT.codRastreio
+GROUP BY
+    Tr.CNPJ,
+    Tr.Nome
+ORDER BY
+    media_dias;
 
 -- Observação sobre a eficiência
 -- Filtro Implícito por Junção (Join):
@@ -176,3 +157,37 @@ GROUP BY
 -- o PostgreSQL pode utilizar operações de HashAggregate em memória para
 -- calcular a função AVG(), reduzindo acessos ao disco e melhorando o
 -- desempenho da agregação.
+
+
+-- Lista TODAS as categorias registradas no sistema e o peso total exato, de resíduos triados para cada uma delas. Inclui obrigatoriamente, as categorias que ainda não possuem nenhum lote triado associado, exibindo o valor 0 para estas (essencial para auditoria do catálogo)
+SELECT 
+    C.Nome AS Categoria,
+    C.Descricao,
+    COUNT(LT.pinLoteTri) AS QuantidadeLotesTriados,
+    COALESCE(SUM(LT.PesoExato), 0) AS PesoTotalTriadoQuilogramas
+FROM Categoria C
+LEFT OUTER JOIN LoteTriado LT ON C.Nome = LT.Categoria
+GROUP BY 
+    C.Nome, 
+    C.Descricao
+ORDER BY 
+    PesoTotalTriadoQuilogramas DESC;
+
+-- Discussão sobre a eficiência
+-- Uso de Junção Externa Preservativa (LEFT OUTER JOIN):
+-- A cláusula LEFT OUTER JOIN garante que nenhuma linha da tabela master ('Categoria')
+-- seja descartada caso não haja correspondência na tabela dependente ('LoteTriado').
+-- Diferente de um INNER JOIN, esta abordagem preserva o escopo total do catálogo
+-- sem a necessidade de realizar consultas separadas ou subconsultas no lógicas.
+
+-- Tratamento Otimizado de Nulos (Função COALESCE):
+-- O uso do COALESCE intercepta os valores NULL resultantes das linhas sem 
+-- correspondência no lado direito do JOIN, convertendo-os diretamente em 0 
+-- em nível de SGBD. Isso evita sobrecarregar a camada de aplicação com tratamento 
+-- de dados e formatação de strings para o usuário leigo.
+
+-- Agregação por Hash Aggregate e Índices:
+-- Como a junção é baseada na chave primária de 'Categoria' (Nome) e propagada como 
+-- chave estrangeira em 'LoteTriado', o PostgreSQL pode utilizar a estratégia de 
+-- Hash Aggregate em memória para computar o COUNT e o SUM simultaneamente, reduzindo 
+-- drasticamente o custo de ordenação e I/O em disco para grandes volumes de dados.
