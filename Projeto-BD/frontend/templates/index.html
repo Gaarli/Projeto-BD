@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EletroReverso</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+
+<!-- ─── SIDEBAR ─────────────────────────────────────────────────── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span class="logo-icon">♻</span>
+    <div>
+      <span class="logo-name">EletroReverso</span>
+      <span class="logo-sub">Gestão de Resíduos</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <span class="nav-label">Cadastros</span>
+    <button class="nav-item active" data-section="ponto-coleta">
+      <svg viewBox="0 0 20 20"><path d="M10 2a6 6 0 0 1 6 6c0 4-6 10-6 10S4 12 4 8a6 6 0 0 1 6-6zm0 4a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>
+      Ponto de Coleta
+    </button>
+    <button class="nav-item" data-section="lote-coleta">
+      <svg viewBox="0 0 20 20"><path d="M3 4h14a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zm1 2v8h12V6H4zm2 2h8v1H6V8zm0 2h6v1H6v-1z"/></svg>
+      Lote de Coleta
+    </button>
+    <button class="nav-item" data-section="dispositivo-lote">
+      <svg viewBox="0 0 20 20"><path d="M7 2h10a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zm1 2v12h8V4H8zM3 5h2v10H3V5zm4 3h4v1H7V8zm0 2h6v1H7v-1zm0 2h3v1H7v-1z"/></svg>
+      Dispositivos no Lote
+    </button>
+
+    <span class="nav-label">Consultas</span>
+    <button class="nav-item" data-section="q-divisao">
+      <svg viewBox="0 0 20 20"><path d="M2 4h16v2H2V4zm0 5h10v2H2V9zm0 5h7v2H2v-2zm13-4 3 4-3 4v-3h-4v-2h4V10z"/></svg>
+      Materiais Críticos
+    </button>
+    <button class="nav-item" data-section="q-lotes-triagem">
+      <svg viewBox="0 0 20 20"><path d="M10 2a8 8 0 1 1 0 16A8 8 0 0 1 10 2zm0 2a6 6 0 1 0 0 12A6 6 0 0 0 10 4zm1 3v4l3 2-1 1.5-3.5-2.2V7H11z"/></svg>
+      Lotes Sem Triagem
+    </button>
+    <button class="nav-item" data-section="q-centros-media">
+      <svg viewBox="0 0 20 20"><path d="M2 14h2v4H2v-4zm4-6h2v10H6V8zm4-4h2v14h-2V4zm4 6h2v8h-2v-8z"/></svg>
+      Centros Acima da Média
+    </button>
+    <button class="nav-item" data-section="q-rastrear">
+      <svg viewBox="0 0 20 20"><path d="M8 2a6 6 0 0 1 4.9 9.49l4.3 4.3-1.42 1.42-4.3-4.3A6 6 0 1 1 8 2zm0 2a4 4 0 1 0 0 8A4 4 0 0 0 8 4z"/></svg>
+      Rastrear por Material
+    </button>
+    <button class="nav-item" data-section="q-tempo-medio">
+      <svg viewBox="0 0 20 20"><path d="M10 2a8 8 0 1 1 0 16A8 8 0 0 1 10 2zm0 2a6 6 0 1 0 0 12A6 6 0 0 0 10 4zm1 3v4l3 2-1 1.5-3.5-2.2V7H11z"/></svg>
+      Tempo de Transporte
+    </button>
+  </nav>
+
+  <div class="sidebar-status">
+    <span class="status-dot" id="statusDot"></span>
+    <span class="status-text" id="statusText">verificando...</span>
+  </div>
+</aside>
+
+<!-- ─── MAIN ─────────────────────────────────────────────────────── -->
+<main class="main">
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ── PONTO DE COLETA ── -->
+  <section class="section active" id="section-ponto-coleta">
+    <div class="section-header">
+      <h1>Cadastrar Ponto de Coleta</h1>
+      <p>Registre um novo local físico de recebimento de resíduos eletrônicos.</p>
+    </div>
+    <div class="card">
+      <div class="form-grid">
+        <div class="field full">
+          <label for="pc-rua">Endereço (Rua e número)</label>
+          <input id="pc-rua" type="text" placeholder="Av. Paulista, 1000" />
+        </div>
+        <div class="field">
+          <label for="pc-cidade">Cidade</label>
+          <input id="pc-cidade" type="text" placeholder="São Paulo" />
+        </div>
+        <div class="field">
+          <label for="pc-estado">Estado</label>
+          <input id="pc-estado" type="text" placeholder="SP" maxlength="2" />
+        </div>
+        <div class="field">
+          <label for="pc-cep">CEP <span class="hint">(sem hífen)</span></label>
+          <input id="pc-cep" type="text" placeholder="01310100" maxlength="8" />
+        </div>
+        <div class="field">
+          <label for="pc-cap">Capacidade máxima (kg)</label>
+          <input id="pc-cap" type="number" step="0.01" min="0" placeholder="500" />
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-primary" onclick="cadastrarPontoColeta()">Cadastrar ponto</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── LOTE DE COLETA ── -->
+  <section class="section" id="section-lote-coleta">
+    <div class="section-header">
+      <h1>Registrar Lote de Coleta</h1>
+      <p>Crie um lote a partir de um ponto de coleta que atingiu capacidade máxima.</p>
+    </div>
+    <div class="card">
+      <div class="form-grid">
+        <div class="field">
+          <label for="lc-id">ID do Lote <span class="hint">(inteiro único)</span></label>
+          <input id="lc-id" type="number" min="1" placeholder="10" />
+        </div>
+        <div class="field">
+          <label for="lc-data">Data de Coleta</label>
+          <input id="lc-data" type="date" />
+        </div>
+        <div class="field full">
+          <label for="lc-ponto">Ponto de Coleta de origem</label>
+          <select id="lc-ponto">
+            <option value="">— selecione —</option>
+          </select>
+        </div>
+      </div>
+      <!-- hidden fields preenchidos pelo select -->
+      <input type="hidden" id="lc-rua" />
+      <input type="hidden" id="lc-cidade" />
+      <input type="hidden" id="lc-cep" />
+      <input type="hidden" id="lc-estado" />
+      <div class="form-actions">
+        <button class="btn-primary" onclick="cadastrarLote()">Registrar lote</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── DISPOSITIVO NO LOTE ── -->
+  <section class="section" id="section-dispositivo-lote">
+    <div class="section-header">
+      <h1>Dispositivos no Lote</h1>
+      <p>Informe quantos dispositivos de cada tipo foram recolhidos em um lote.</p>
+    </div>
+    <div class="card">
+      <div class="form-grid">
+        <div class="field">
+          <label for="dl-lote">Lote de Coleta</label>
+          <select id="dl-lote">
+            <option value="">— selecione —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="dl-disp">Dispositivo Eletrônico</label>
+          <select id="dl-disp">
+            <option value="">— selecione —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="dl-qtd">Quantidade</label>
+          <input id="dl-qtd" type="number" min="1" placeholder="50" />
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-primary" onclick="cadastrarDispLote()">Registrar dispositivos</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CONSULTA: DIVISÃO RELACIONAL ── -->
+  <section class="section" id="section-q-divisao">
+    <div class="section-header">
+      <h1>Materiais Críticos — Divisão Relacional</h1>
+      <p>Centros de Reciclagem que já processaram <strong>todos</strong> os materiais classificados como críticos (Lítio, Cobalto, Neodímio, etc.).</p>
+    </div>
+    <div class="query-meta">
+      <span class="tag tag-green">Divisão Relacional</span>
+      <span class="tag tag-gray">Duplo NOT EXISTS</span>
+    </div>
+    <div class="card">
+      <div class="form-actions form-actions--left">
+        <button class="btn-primary" onclick="runDivisao()">Executar consulta</button>
+      </div>
+      <div id="result-divisao" class="result-area"></div>
+    </div>
+  </section>
+
+  <!-- ── CONSULTA: LOTES SEM TRIAGEM ── -->
+  <section class="section" id="section-q-lotes-triagem">
+    <div class="section-header">
+      <h1>Lotes Aguardando Triagem</h1>
+      <p>Lotes que chegaram a um Centro de Triagem mas ainda não originaram nenhum Lote Triado.</p>
+    </div>
+    <div class="query-meta">
+      <span class="tag tag-amber">Anti-Join</span>
+      <span class="tag tag-gray">NOT EXISTS</span>
+    </div>
+    <div class="card">
+      <div class="form-actions form-actions--left">
+        <button class="btn-primary" onclick="runLotesSemTriagem()">Executar consulta</button>
+      </div>
+      <div id="result-lotes-triagem" class="result-area"></div>
+    </div>
+  </section>
+
+  <!-- ── CONSULTA: CENTROS ACIMA DA MÉDIA ── -->
+  <section class="section" id="section-q-centros-media">
+    <div class="section-header">
+      <h1>Centros de Reciclagem Acima da Média</h1>
+      <p>Centros licenciados cujo volume total de lotes triados processados supera a média nacional.</p>
+    </div>
+    <div class="query-meta">
+      <span class="tag tag-green">CTE</span>
+      <span class="tag tag-gray">AVG · SUM · GROUP BY</span>
+    </div>
+    <div class="card">
+      <div class="form-actions form-actions--left">
+        <button class="btn-primary" onclick="runCentrosMedia()">Executar consulta</button>
+      </div>
+      <div id="result-centros-media" class="result-area"></div>
+    </div>
+  </section>
+
+  <!-- ── CONSULTA: RASTREAR POR MATERIAL ── -->
+  <section class="section" id="section-q-rastrear">
+    <div class="section-header">
+      <h1>Rastrear Origem por Material</h1>
+      <p>Dado um material recuperado, descubra quais Pontos de Coleta foram a origem original dos dispositivos.</p>
+    </div>
+    <div class="query-meta">
+      <span class="tag tag-amber">Parametrizada</span>
+      <span class="tag tag-gray">DISTINCT · Junções encadeadas</span>
+    </div>
+    <div class="card">
+      <div class="form-grid">
+        <div class="field">
+          <label for="rm-material">Material a rastrear</label>
+          <select id="rm-material">
+            <option value="">— selecione —</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-actions form-actions--left">
+        <button class="btn-primary" onclick="runRastrear()">Rastrear</button>
+      </div>
+      <div id="result-rastrear" class="result-area"></div>
+    </div>
+  </section>
+
+  <!-- ── CONSULTA: TEMPO MÉDIO ── -->
+  <section class="section" id="section-q-tempo-medio">
+    <div class="section-header">
+      <h1>Tempo Médio de Transporte</h1>
+      <p>Média de dias por transportadora nos trajetos Coleta → Triagem.</p>
+    </div>
+    <div class="query-meta">
+      <span class="tag tag-green">Agregação</span>
+      <span class="tag tag-gray">AVG · JOIN implícito como filtro</span>
+    </div>
+    <div class="card">
+      <div class="form-actions form-actions--left">
+        <button class="btn-primary" onclick="runTempoMedio()">Executar consulta</button>
+      </div>
+      <div id="result-tempo-medio" class="result-area"></div>
+    </div>
+  </section>
+
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

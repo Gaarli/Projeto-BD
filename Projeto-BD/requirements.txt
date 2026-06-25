@@ -1,0 +1,13 @@
+# EletroReverso — Dependências Python
+# SCC0240 - Bases de Dados | USP ICMC | 1º Semestre 2026
+#
+# Instalação:
+#   python -m venv venv
+#   source venv/bin/activate        # Linux/Mac
+#   venv\Scripts\activate           # Windows
+#   pip install -r requirements.txt
+
+flask==3.1.1
+flask-cors==5.0.1
+psycopg2-binary==2.9.10
+python-dotenv==1.0.1
